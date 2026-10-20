@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Project Kanban Board</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e8ecf0;--col:#f5f7f9;--card:#fff;--ink:#17212b;--mute:#5d6b79;--line:#d2d9e0;--feat:#1d6fd1;--bug:#c93b3b;--over:#b4232a;--btn:#17212b;--btn-ink:#fff;--focus:#1d6fd1;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e141a;--col:#161e26;--card:#1e2832;--ink:#e6ecf2;--mute:#92a1b0;--line:#2c3844;--feat:#5aa2f2;--bug:#f07878;--over:#ff8c8c;--btn:#e6ecf2;--btn-ink:#0e141a;--focus:#5aa2f2;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e141a;--col:#161e26;--card:#1e2832;--ink:#e6ecf2;--mute:#92a1b0;--line:#2c3844;--feat:#5aa2f2;--bug:#f07878;--over:#ff8c8c;--btn:#e6ecf2;--btn-ink:#0e141a;--focus:#5aa2f2;color-scheme:dark}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:400 15px/1.45 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;padding:20px 24px 8px}
+header>div{text-align:center}
+#add{justify-self:end}
+h1{margin:0;font-size:22px;font-weight:600;letter-spacing:-.01em}
+.sub{color:var(--mute);font-size:13px;margin-top:2px}
+button,input,select,textarea{font:inherit;color:inherit}
+.btn{background:var(--btn);color:var(--btn-ink);border:0;border-radius:6px;padding:9px 16px;font-weight:500;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:transparent;color:var(--over);border:1px solid var(--line);margin-right:auto}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.scroller{overflow-x:auto;padding:12px 24px 28px}
+.board{display:grid;grid-template-columns:repeat(4,minmax(260px,1fr));gap:14px;min-width:1080px;align-items:start}
+.col{background:var(--col);border:1px solid var(--line);border-radius:10px;padding:10px;min-height:260px}
+.col.over{outline:2px dashed var(--focus);outline-offset:-4px}
+.col h2{margin:2px 4px 10px;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--c)}
+.count{margin-left:auto;color:var(--mute);font-weight:500;font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--t);border-radius:6px;padding:10px 12px;margin-bottom:9px;cursor:grab}
+.card.dragging{opacity:.45}
+.top{display:flex;justify-content:space-between;color:var(--mute);font-size:12px}
+.type{color:var(--t);font-weight:600}
+.card h3{margin:4px 0 4px;font-size:15px;font-weight:600}
+.card p{margin:0 0 10px;color:var(--mute);font-size:13px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.meta{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mute)}
+.av{width:22px;height:22px;border-radius:50%;background:var(--line);color:var(--ink);display:grid;place-items:center;font-size:10px;font-weight:600}
+.due{margin-left:auto}
+.due.late{color:var(--over);font-weight:600}
+.empty{color:var(--mute);font-size:13px;padding:10px 6px}
+[hidden]{display:none!important}
+.app{display:flex;min-height:100vh}
+.nav{flex:none;width:190px;position:sticky;top:0;align-self:flex-start;height:100vh;background:var(--col);border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:6px}
+.nav button{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;border-radius:6px;padding:10px 12px;text-align:left;cursor:pointer;font-weight:500}
+.nav button[aria-current="page"]{background:var(--btn);color:var(--btn-ink)}
+.nav svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.content{flex:1;min-width:0}
+.mwrap{padding:12px 24px 28px;max-width:560px;margin:0 auto}
+.mlist{list-style:none;margin:14px 0 0;padding:0}
+.mlist li{display:flex;align-items:center;gap:12px;background:var(--col);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.mlist .av{width:32px;height:32px;font-size:12px}
+.mname{font-weight:600}
+.mlist .btn.sm{margin:0 0 0 auto}
+.rp{margin:0 0 16px}
+.links{display:grid;grid-template-columns:repeat(4,minmax(260px,1fr));gap:14px;min-width:1080px;margin-bottom:14px}
+.lcard{background:var(--col);border:1px solid var(--line);border-radius:10px;padding:12px}
+.lcard label{margin:0 0 8px;font-size:15px;font-weight:600}
+.lcard input{display:block;width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:6px}
+.lcard input::placeholder{color:var(--mute);opacity:1}
+.btn.sm{padding:6px 12px;font-size:13px;margin-bottom:12px}
+.toolrow{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:12px}
+.toolrow .btn.sm{margin-bottom:0;flex:none}
+.toolrow label{display:flex;align-items:center;gap:8px;margin:0;flex:1}
+.toolrow label select{margin-top:0;flex:1;min-width:0}
+.card .copy{margin-top:10px;background:rgba(255,255,255,.6);color:#17212b;border:1px solid rgba(0,0,0,.35);border-radius:6px;padding:5px 10px;font-size:13px;font-weight:500;cursor:pointer}
+.err{color:var(--over);font-size:13px;margin:-4px 0 10px}
+@media (max-width:600px){.nav{width:60px;padding:12px 8px}.nav span{display:none}.nav button{justify-content:center;padding:10px}}
+.card .top,.card p,.card .meta,.card .ro{color:var(--ink)}
+.card p{font-size:14px}
+.card{position:relative;background:var(--cb);color:#17212b;border:3px solid #000}
+.card .top,.card p,.card .meta,.card .ro,.card .type{color:#17212b}
+.card .due.late{color:#5c0a0e;text-decoration:underline}
+.card .av{background:rgba(255,255,255,.6);color:#17212b}
+.card h3{padding-right:30px}
+.ico{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.6);display:grid;place-items:center;color:#17212b}
+.ico svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+dialog{max-height:calc(100vh - 24px);overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);width:min(480px,calc(100vw - 24px));padding:20px}
+dialog::backdrop{background:rgba(10,15,20,.55)}
+dialog h2{margin:0 0 14px;font-size:18px}
+label{display:block;font-size:13px;font-weight:500;margin-bottom:12px}
+label input,label select,label textarea{display:block;width:100%;margin-top:4px;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:6px}
+textarea{min-height:80px;resize:vertical}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ro{font-size:12px;color:var(--mute);margin:-4px 0 12px}
+.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="app">
+<nav class="nav" aria-label="Main">
+  <button id="navK" aria-current="page" aria-label="Kanban"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="13" rx="1"/></svg><span>Kanban</span></button>
+  <button id="navM" aria-current="false" aria-label="Members"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.3c2.2.7 3.5 2.6 3.5 5.7"/></svg><span>Members</span></button>
+</nav>
+<div class="content">
+<section id="viewK">
+<header>
+  <span></span>
+  <div><h1>Project Kanban Board</h1><div class="sub" id="sum"></div></div>
+  <button class="btn" id="add">New task</button>
+</header>
+<div class="scroller">
+<div class="links">
+  <div class="lcard"><label for="l-presentation">Presentation</label><input id="l-presentation" type="url" data-link="presentation" placeholder="empty"></div>
+  <div class="lcard"><label for="l-report">Report</label><input id="l-report" type="url" data-link="report" placeholder="empty"></div>
+  <div class="lcard"><label for="l-demo">Demo</label><input id="l-demo" type="url" data-link="demo" placeholder="empty"></div>
+  <div class="lcard"><label for="l-documentation">Documentation</label><input id="l-documentation" type="url" data-link="documentation" placeholder="empty"></div>
+</div>
+<main class="board" id="board"></main></div>
+</section>
+<section id="viewM" hidden>
+<header>
+  <span></span>
+  <div><h1>Team members</h1><div class="sub" id="msum"></div></div>
+  <span></span>
+</header>
+<div class="mwrap">
+  <button class="btn" id="addM">Add member</button>
+  <ul class="mlist" id="mlist"></ul>
+</div>
+</section>
+</div>
+</div>
+
+<dialog id="dlg">
+  <form id="f">
+    <h2 id="dt">New task</h2>
+    <div class="ro" id="ro"></div>
+    <label>Title<input name="title" required maxlength="100"></label>
+    <label>Description<textarea name="description"></textarea></label>
+    <div class="row">
+      <label>Type<select name="type"><option value="feature">Feature</option><option value="bug">Bug</option></select></label>
+      <label>Status<select name="status"></select></label>
+    </div>
+    <div class="row">
+      <label>Assignee<select name="assignee"></select></label>
+      <label>Due date<input type="date" name="due"></label>
+    </div>
+    <label>Context<textarea name="context" placeholder="Background, links or notes for this task"></textarea></label>
+    <div class="ro" id="cts"></div>
+    <div class="toolrow">
+    <button type="button" class="btn ghost sm" id="copyCtx">Copy context</button>
+    <label>AI tool<select name="aitool"><option value="">Select an AI tool</option><option>Claude</option><option>ChatGPT</option><option>Gemini</option><option>GitHub Copilot</option><option>Cursor</option></select></label>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn danger" id="del">Delete task</button>
+      <button type="button" class="btn ghost" id="cancel">Cancel</button>
+      <button type="submit" class="btn">Save task</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="rdlg">
+  <h2>Remove member?</h2>
+  <p class="rp" id="rtext"></p>
+  <div class="actions">
+    <button type="button" class="btn ghost" id="rno">No, keep member</button>
+    <button type="button" class="btn" id="ryes">Yes, remove</button>
+  </div>
+</dialog>
+
+<dialog id="mdlg">
+  <form id="mf">
+    <h2>Add member</h2>
+    <label>Name<input name="mname" required maxlength="40"></label>
+    <div class="err" id="merr"></div>
+    <div class="actions">
+      <button type="button" class="btn ghost" id="mcancel">Cancel</button>
+      <button type="submit" class="btn">Add member</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+const COLS=[["todo","To Do","#8a97a5"],["inprogress","In Progress","#1d6fd1"],["review","Review","#c98a14"],["done","Done","#2f9e6b"]];
+const KEY="kanban-board-v1";
+const iso=d=>d.toISOString().slice(0,10);
+const off=n=>{const d=new Date();d.setDate(d.getDate()+n);return iso(d)};
+const fmt=s=>s?new Date(s+"T00:00").toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"}):"No due date";
+const mk=(n)=>"TASK-"+String(n).padStart(3,"0");
+
+function seed(){
+  const t=(n,title,description,type,status,assignee,due,created)=>({id:mk(n),title,description,type,status,assignee,due,created});
+  return {next:7,tasks:[
+    t(1,"Design onboarding screens","Sketch the three welcome screens and agree the copy with the team.","feature","done","Maya Patel",off(-3),off(-12)),
+    t(2,"Login fails on Safari","Users on Safari 17 see a blank page after submitting the login form.","bug","inprogress","Tom Reyes",off(1),off(-5)),
+    t(3,"Add CSV export","Let admins download the customer list as a CSV file.","feature","todo","Priya Nair",off(9),off(-2)),
+    t(4,"Fix duplicate emails","Two confirmation emails are sent when a user changes their address.","bug","review","Maya Patel",off(-1),off(-7)),
+    t(5,"Dark mode for settings page","Apply the shared colour tokens to the settings screens.","feature","inprogress","Sam Okafor",off(4),off(-4)),
+    t(6,"Update API docs","Document the new pagination parameters.","feature","todo","",off(14),off(0))
+  ]};
+}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Array.isArray(s.tasks))return s}catch(e){}return seed()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+let state=load(), editing=null, dragId=null;
+const MOCK={
+"TASK-001":"Design brief approved by product. Three screens: welcome, permissions and profile setup. Final copy signed off by marketing. Figma file shared in the design channel. Handoff is complete and engineering has started building it.",
+"TASK-002":"Reported by 4 users on Safari 17. After submitting the login form the page goes blank and no error shows in the console. Chrome and Firefox are not affected. Suspect the session cookie’s SameSite setting. To reproduce: open /login in Safari and submit valid credentials.",
+"TASK-003":"Request from customer success. Admins need to export the full customer list with name, email, plan and signup date. Expect up to 50,000 rows, so build the file in the background and email a download link. Only admins should be able to export.",
+"TASK-004":"Users get two confirmation emails when they change their email address. Likely cause: the change event fires from both the profile form and the account sync job. The fix is ready for review. Please check the new test that covers duplicate sends.",
+"TASK-005":"Settings pages still use hard-coded colours. Switch them to the shared colour tokens and check contrast in light and dark mode. Pages left: notifications, billing and security. Attach before and after screenshots to the pull request.",
+"TASK-006":"The new pagination parameters (page, page_size and cursor) are missing from the API docs. Add request and response examples, and note the default page size of 25 and maximum of 100. Waiting on final endpoint names from the backend team."
+};
+(function(){
+  let changed=false;
+  state.tasks.forEach((t,i)=>{
+    if(t.context===undefined){
+      t.context=MOCK[t.id]||("Background for "+t.title+": goals, links and decisions so far. Add details here as the work progresses.");
+      t.contextUpdated=new Date(Date.now()-(i*7+3)*3600000).toISOString();
+      changed=true;
+    }
+  });
+  if(changed)save();
+})();
+
+const $=id=>document.getElementById(id);
+const el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e};
+const COLORS={done:"#e0fffc",late:"#ff7663",soon:"#fbff87",ok:"#99ffb4"};
+function urgency(t){
+  if(t.status==="done")return "done";
+  if(!t.due)return "ok";
+  const ms=new Date(t.due+"T23:59:59")-new Date();
+  return ms<0?"late":ms<172800000?"soon":"ok";
+}
+async function copyText(txt){
+  try{await navigator.clipboard.writeText(txt);return true}catch(e){}
+  try{const ta=document.createElement("textarea");ta.value=txt;ta.style.cssText="position:fixed;opacity:0";document.body.append(ta);ta.select();const ok=document.execCommand("copy");ta.remove();return ok}catch(e){return false}
+}
+const buildCopy=(title,desc,ctx)=>[title,desc,ctx].filter(Boolean).join("\n\n");
+function flash(b,ok){
+  const o=b.dataset.label||(b.dataset.label=b.textContent);
+  b.textContent=ok?"Copied":"Copy failed";
+  clearTimeout(b._t);b._t=setTimeout(()=>{b.textContent=o},1600);
+}
+function icon(type){
+  const s=el("span","ico");s.setAttribute("role","img");s.setAttribute("aria-label",type==="bug"?"Bug":"Feature");
+  s.innerHTML=type==="bug"
+    ?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2l1.9 1.9M16 2l-1.9 1.9M9 7.1v-1a3 3 0 0 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6z"/><path d="M12 20v-9M6.5 13H2M3 21c0-2.1 1.7-3.9 3.8-4M20.9 21c0-2.1-1.7-3.9-3.8-4M22 13h-4.5"/></svg>'
+    :'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6-4.5-4.2 6.1-.7z"/></svg>';
+  return s;
+}
+const initials=n=>n.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase()||"?";
+
+function render(){
+  const board=$("board");board.textContent="";
+  COLS.forEach(([key,name,color])=>{
+    const tasks=state.tasks.filter(t=>t.status===key);
+    const col=el("section","col");col.style.setProperty("--c",color);
+    const h=el("h2");h.append(el("span","dot"),name,el("span","count",tasks.length));
+    col.append(h);
+    col.addEventListener("dragover",e=>{e.preventDefault();col.classList.add("over")});
+    col.addEventListener("dragleave",e=>{if(!col.contains(e.relatedTarget))col.classList.remove("over")});
+    col.addEventListener("drop",e=>{e.preventDefault();col.classList.remove("over");const t=state.tasks.find(x=>x.id===dragId);if(t&&t.status!==key){t.status=key;save();render()}});
+    if(!tasks.length)col.append(el("div","empty","No tasks here. Drag one in or add a new task."));
+    tasks.forEach(t=>col.append(card(t)));
+    board.append(col);
+  });
+  const done=state.tasks.filter(t=>t.status==="done").length;
+  $("sum").textContent=state.tasks.length+" tasks, "+done+" done";
+}
+function card(t){
+  const c=el("article","card");c.style.setProperty("--cb",COLORS[urgency(t)]);
+  c.draggable=true;c.tabIndex=0;c.setAttribute("aria-label","Edit task: "+t.title);
+  const top=el("div","top");top.append(el("span","type",t.type==="bug"?"Bug":"Feature"));
+  const meta=el("div","meta");
+  const late=urgency(t)==="late";
+  const av=el("span","av",initials(t.assignee||""));
+  meta.append(av,el("span",null,t.assignee||"Unassigned"),el("span","due"+(late?" late":""),(late?"Overdue: ":"Due ")+fmt(t.due)));
+  if(!t.due)meta.lastChild.textContent="No due date";
+  c.append(icon(t.type),top,el("h3",null,t.title),el("p",null,t.description||""),meta,el("div","ro","Created "+fmt(t.created)));
+  c.lastChild.style.margin="8px 0 0";
+  const cb=el("button","copy","Copy context");cb.type="button";
+  cb.addEventListener("click",async e=>{e.stopPropagation();flash(cb,await copyText(buildCopy(t.title,t.description,t.context)))});
+  c.append(cb);
+  c.addEventListener("dragstart",e=>{dragId=t.id;c.classList.add("dragging");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",t.id)});
+  c.addEventListener("dragend",()=>c.classList.remove("dragging"));
+  c.addEventListener("click",()=>openDlg(t));
+  c.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target===c)openDlg(t)});
+  return c;
+}
+
+const f=$("f"),dlg=$("dlg");
+COLS.forEach(([k,n])=>{const o=document.createElement("option");o.value=k;o.textContent=n;f.status.append(o)});
+const MKEY="kanban-members-v1";
+function loadMembers(){try{const s=JSON.parse(localStorage.getItem(MKEY));if(Array.isArray(s))return s}catch(e){}return ["Maya Patel","Tom Reyes","Priya Nair","Sam Okafor"]}
+function saveMembers(){try{localStorage.setItem(MKEY,JSON.stringify(members))}catch(e){}}
+let members=loadMembers();
+function setCts(ts){
+  $("cts").textContent=ts?"Last updated "+new Date(ts).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"}):"Context not updated yet";
+}
+function fillAssignees(cur){
+  const names=[...members];if(cur&&!names.includes(cur))names.push(cur);
+  f.assignee.textContent="";
+  [["","Unassigned"],...names.map(n=>[n,n])].forEach(([v,l])=>{const o=document.createElement("option");o.value=v;o.textContent=l;f.assignee.append(o)});
+  f.assignee.value=cur||"";
+}
+function openDlg(t){
+  editing=t||null;
+  $("dt").textContent=t?"Edit task":"New task";
+  $("ro").textContent=t?"Created "+fmt(t.created):"The created date is added automatically.";
+  f.title.value=t?t.title:"";f.description.value=t?t.description:"";
+  f.type.value=t?t.type:"feature";f.status.value=t?t.status:"todo";
+  fillAssignees(t?t.assignee:"");f.due.value=t?t.due:"";
+  f.context.value=t?t.context||"":"";f.aitool.value=t?t.aiTool||"":"";setCts(t?t.contextUpdated:"");
+  $("del").style.display=t?"":"none";
+  dlg.showModal();f.title.focus();
+}
+f.addEventListener("submit",e=>{
+  e.preventDefault();
+  const v={title:f.title.value.trim(),description:f.description.value.trim(),type:f.type.value,status:f.status.value,assignee:f.assignee.value.trim(),due:f.due.value};
+  if(!v.title)return;
+  const ctx=f.context.value.trim(),prev=editing?(editing.context||""):"";
+  v.context=ctx;v.aiTool=f.aitool.value;
+  if(ctx!==prev)v.contextUpdated=new Date().toISOString();
+  if(editing)Object.assign(editing,v);
+  else state.tasks.push({id:mk(state.next++),created:iso(new Date()),...v});
+  save();render();dlg.close();
+});
+function renderMembers(){
+  const ul=$("mlist");ul.textContent="";
+  $("msum").textContent=members.length+(members.length===1?" member":" members");
+  if(!members.length){ul.append(el("li","empty","No members yet. Add one to assign tasks."));return}
+  members.forEach(n=>{
+    const c=state.tasks.filter(t=>t.assignee===n).length;
+    const info=el("div");info.append(el("div","mname",n),el("div","sub",c+(c===1?" task":" tasks")));
+    const rm=el("button","btn ghost sm","Remove");rm.type="button";rm.setAttribute("aria-label","Remove "+n);rm.onclick=()=>askRemove(n);
+    const li=el("li");li.append(el("span","av",initials(n)),info,rm);ul.append(li);
+  });
+}
+function show(v){
+  $("viewK").hidden=v!=="k";$("viewM").hidden=v!=="m";
+  $("navK").setAttribute("aria-current",v==="k"?"page":"false");
+  $("navM").setAttribute("aria-current",v==="m"?"page":"false");
+  if(v==="m")renderMembers();else render();
+}
+$("navK").onclick=()=>show("k");
+$("navM").onclick=()=>show("m");
+const mf=$("mf"),mdlg=$("mdlg");
+$("addM").onclick=()=>{mf.mname.value="";$("merr").textContent="";mdlg.showModal();mf.mname.focus()};
+$("mcancel").onclick=()=>mdlg.close();
+mf.addEventListener("submit",e=>{
+  e.preventDefault();
+  const n=mf.mname.value.trim().replace(/\s+/g," ");
+  if(!n)return;
+  if(members.some(m=>m.toLowerCase()===n.toLowerCase())){$("merr").textContent="That member is already on the team.";return}
+  members.push(n);saveMembers();renderMembers();mdlg.close();
+});
+setInterval(()=>{if(!dlg.open&&!$("viewK").hidden&&!document.querySelector(".dragging"))render()},300000);
+$("copyCtx").onclick=async()=>{const b=$("copyCtx");flash(b,await copyText(buildCopy(f.title.value.trim(),f.description.value.trim(),f.context.value.trim())))};
+const LKEY="kanban-links-v1";
+let links={};
+try{links=JSON.parse(localStorage.getItem(LKEY))||{}}catch(e){}
+document.querySelectorAll("[data-link]").forEach(i=>{
+  i.value=links[i.dataset.link]||"";
+  i.addEventListener("input",()=>{links[i.dataset.link]=i.value.trim();try{localStorage.setItem(LKEY,JSON.stringify(links))}catch(e){}});
+});
+let removing=null;
+function askRemove(n){
+  removing=n;
+  const c=state.tasks.filter(t=>t.assignee===n).length;
+  $("rtext").textContent="Remove "+n+" from the team? "+(c?c+(c===1?" task":" tasks")+" assigned to them will become unassigned.":"They have no assigned tasks.");
+  $("rdlg").showModal();
+}
+$("rno").onclick=()=>{removing=null;$("rdlg").close()};
+$("ryes").onclick=()=>{
+  if(removing!==null){
+    members=members.filter(m=>m!==removing);
+    state.tasks.forEach(t=>{if(t.assignee===removing)t.assignee=""});
+    saveMembers();save();renderMembers();
+  }
+  removing=null;$("rdlg").close();
+};
+$("add").onclick=()=>openDlg(null);
+$("cancel").onclick=()=>dlg.close();
+$("del").onclick=()=>{if(editing&&confirm("Delete this task? This can’t be undone.")){state.tasks=state.tasks.filter(t=>t!==editing);save();render();dlg.close()}};
+render();
+</script>
+</body>
+</html>
