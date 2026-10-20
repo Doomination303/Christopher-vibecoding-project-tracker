@@ -63,7 +63,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .card h3{padding-right:30px}
 .ico{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.6);display:grid;place-items:center;color:#17212b}
 .ico svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-dialog{border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);width:min(480px,calc(100vw - 24px));padding:20px}
+dialog{max-height:calc(100vh - 24px);overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);width:min(480px,calc(100vw - 24px));padding:20px}
 dialog::backdrop{background:rgba(10,15,20,.55)}
 dialog h2{margin:0 0 14px;font-size:18px}
 label{display:block;font-size:13px;font-weight:500;margin-bottom:12px}
@@ -117,6 +117,9 @@ textarea{min-height:80px;resize:vertical}
       <label>Assignee<select name="assignee"></select></label>
       <label>Due date<input type="date" name="due"></label>
     </div>
+    <label>Context<textarea name="context" placeholder="Background, links or notes for this task"></textarea></label>
+    <div class="ro" id="cts"></div>
+    <label>AI tool<select name="aitool"><option value="">Select an AI tool</option><option>Claude</option><option>ChatGPT</option><option>Gemini</option><option>GitHub Copilot</option><option>Cursor</option></select></label>
     <div class="actions">
       <button type="button" class="btn danger" id="del">Delete task</button>
       <button type="button" class="btn ghost" id="cancel">Cancel</button>
@@ -159,6 +162,25 @@ function seed(){
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Array.isArray(s.tasks))return s}catch(e){}return seed()}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
 let state=load(), editing=null, dragId=null;
+const MOCK={
+"TASK-001":"Design brief approved by product. Three screens: welcome, permissions and profile setup. Final copy signed off by marketing. Figma file shared in the design channel. Handoff is complete and engineering has started building it.",
+"TASK-002":"Reported by 4 users on Safari 17. After submitting the login form the page goes blank and no error shows in the console. Chrome and Firefox are not affected. Suspect the session cookie’s SameSite setting. To reproduce: open /login in Safari and submit valid credentials.",
+"TASK-003":"Request from customer success. Admins need to export the full customer list with name, email, plan and signup date. Expect up to 50,000 rows, so build the file in the background and email a download link. Only admins should be able to export.",
+"TASK-004":"Users get two confirmation emails when they change their email address. Likely cause: the change event fires from both the profile form and the account sync job. The fix is ready for review. Please check the new test that covers duplicate sends.",
+"TASK-005":"Settings pages still use hard-coded colours. Switch them to the shared colour tokens and check contrast in light and dark mode. Pages left: notifications, billing and security. Attach before and after screenshots to the pull request.",
+"TASK-006":"The new pagination parameters (page, page_size and cursor) are missing from the API docs. Add request and response examples, and note the default page size of 25 and maximum of 100. Waiting on final endpoint names from the backend team."
+};
+(function(){
+  let changed=false;
+  state.tasks.forEach((t,i)=>{
+    if(t.context===undefined){
+      t.context=MOCK[t.id]||("Background for "+t.title+": goals, links and decisions so far. Add details here as the work progresses.");
+      t.contextUpdated=new Date(Date.now()-(i*7+3)*3600000).toISOString();
+      changed=true;
+    }
+  });
+  if(changed)save();
+})();
 
 const $=id=>document.getElementById(id);
 const el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e};
@@ -219,6 +241,9 @@ const MKEY="kanban-members-v1";
 function loadMembers(){try{const s=JSON.parse(localStorage.getItem(MKEY));if(Array.isArray(s))return s}catch(e){}return ["Maya Patel","Tom Reyes","Priya Nair","Sam Okafor"]}
 function saveMembers(){try{localStorage.setItem(MKEY,JSON.stringify(members))}catch(e){}}
 let members=loadMembers();
+function setCts(ts){
+  $("cts").textContent=ts?"Last updated "+new Date(ts).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"}):"Context not updated yet";
+}
 function fillAssignees(cur){
   const names=[...members];if(cur&&!names.includes(cur))names.push(cur);
   f.assignee.textContent="";
@@ -232,6 +257,7 @@ function openDlg(t){
   f.title.value=t?t.title:"";f.description.value=t?t.description:"";
   f.type.value=t?t.type:"feature";f.status.value=t?t.status:"todo";
   fillAssignees(t?t.assignee:"");f.due.value=t?t.due:"";
+  f.context.value=t?t.context||"":"";f.aitool.value=t?t.aiTool||"":"";setCts(t?t.contextUpdated:"");
   $("del").style.display=t?"":"none";
   dlg.showModal();f.title.focus();
 }
@@ -239,6 +265,9 @@ f.addEventListener("submit",e=>{
   e.preventDefault();
   const v={title:f.title.value.trim(),description:f.description.value.trim(),type:f.type.value,status:f.status.value,assignee:f.assignee.value.trim(),due:f.due.value};
   if(!v.title)return;
+  const ctx=f.context.value.trim(),prev=editing?(editing.context||""):"";
+  v.context=ctx;v.aiTool=f.aitool.value;
+  if(ctx!==prev)v.contextUpdated=new Date().toISOString();
   if(editing)Object.assign(editing,v);
   else state.tasks.push({id:mk(state.next++),created:iso(new Date()),...v});
   save();render();dlg.close();
