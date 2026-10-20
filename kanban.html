@@ -52,6 +52,11 @@ button,input,select,textarea{font:inherit;color:inherit}
 .mlist li{display:flex;align-items:center;gap:12px;background:var(--col);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px}
 .mlist .av{width:32px;height:32px;font-size:12px}
 .mname{font-weight:600}
+.links{display:grid;grid-template-columns:repeat(4,minmax(260px,1fr));gap:14px;min-width:1080px;margin-bottom:14px}
+.lcard{background:var(--col);border:1px solid var(--line);border-radius:10px;padding:12px}
+.lcard label{margin:0 0 8px;font-size:15px;font-weight:600}
+.lcard input{display:block;width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:6px}
+.lcard input::placeholder{color:var(--mute);opacity:1}
 .btn.sm{padding:6px 12px;font-size:13px;margin-bottom:12px}
 .toolrow{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:12px}
 .toolrow .btn.sm{margin-bottom:0;flex:none}
@@ -93,7 +98,14 @@ textarea{min-height:80px;resize:vertical}
   <div><h1>Project Kanban Board</h1><div class="sub" id="sum"></div></div>
   <button class="btn" id="add">New task</button>
 </header>
-<div class="scroller"><main class="board" id="board"></main></div>
+<div class="scroller">
+<div class="links">
+  <div class="lcard"><label for="l-presentation">Presentation</label><input id="l-presentation" type="url" data-link="presentation" placeholder="empty"></div>
+  <div class="lcard"><label for="l-report">Report</label><input id="l-report" type="url" data-link="report" placeholder="empty"></div>
+  <div class="lcard"><label for="l-demo">Demo</label><input id="l-demo" type="url" data-link="demo" placeholder="empty"></div>
+  <div class="lcard"><label for="l-documentation">Documentation</label><input id="l-documentation" type="url" data-link="documentation" placeholder="empty"></div>
+</div>
+<main class="board" id="board"></main></div>
 </section>
 <section id="viewM" hidden>
 <header>
@@ -324,6 +336,13 @@ mf.addEventListener("submit",e=>{
 });
 setInterval(()=>{if(!dlg.open&&!$("viewK").hidden&&!document.querySelector(".dragging"))render()},300000);
 $("copyCtx").onclick=async()=>{const b=$("copyCtx");flash(b,await copyText(buildCopy(f.title.value.trim(),f.description.value.trim(),f.context.value.trim())))};
+const LKEY="kanban-links-v1";
+let links={};
+try{links=JSON.parse(localStorage.getItem(LKEY))||{}}catch(e){}
+document.querySelectorAll("[data-link]").forEach(i=>{
+  i.value=links[i.dataset.link]||"";
+  i.addEventListener("input",()=>{links[i.dataset.link]=i.value.trim();try{localStorage.setItem(LKEY,JSON.stringify(links))}catch(e){}});
+});
 $("add").onclick=()=>openDlg(null);
 $("cancel").onclick=()=>dlg.close();
 $("del").onclick=()=>{if(editing&&confirm("Delete this task? This can’t be undone.")){state.tasks=state.tasks.filter(t=>t!==editing);save();render();dlg.close()}};
