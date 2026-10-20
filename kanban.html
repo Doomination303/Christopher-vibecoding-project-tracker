@@ -52,6 +52,12 @@ button,input,select,textarea{font:inherit;color:inherit}
 .mlist li{display:flex;align-items:center;gap:12px;background:var(--col);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px}
 .mlist .av{width:32px;height:32px;font-size:12px}
 .mname{font-weight:600}
+.btn.sm{padding:6px 12px;font-size:13px;margin-bottom:12px}
+.toolrow{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:12px}
+.toolrow .btn.sm{margin-bottom:0;flex:none}
+.toolrow label{display:flex;align-items:center;gap:8px;margin:0;flex:1}
+.toolrow label select{margin-top:0;flex:1;min-width:0}
+.card .copy{margin-top:10px;background:rgba(255,255,255,.6);color:#17212b;border:1px solid rgba(0,0,0,.35);border-radius:6px;padding:5px 10px;font-size:13px;font-weight:500;cursor:pointer}
 .err{color:var(--over);font-size:13px;margin:-4px 0 10px}
 @media (max-width:600px){.nav{width:60px;padding:12px 8px}.nav span{display:none}.nav button{justify-content:center;padding:10px}}
 .card .top,.card p,.card .meta,.card .ro{color:var(--ink)}
@@ -119,7 +125,10 @@ textarea{min-height:80px;resize:vertical}
     </div>
     <label>Context<textarea name="context" placeholder="Background, links or notes for this task"></textarea></label>
     <div class="ro" id="cts"></div>
+    <div class="toolrow">
+    <button type="button" class="btn ghost sm" id="copyCtx">Copy context</button>
     <label>AI tool<select name="aitool"><option value="">Select an AI tool</option><option>Claude</option><option>ChatGPT</option><option>Gemini</option><option>GitHub Copilot</option><option>Cursor</option></select></label>
+    </div>
     <div class="actions">
       <button type="button" class="btn danger" id="del">Delete task</button>
       <button type="button" class="btn ghost" id="cancel">Cancel</button>
@@ -191,6 +200,16 @@ function urgency(t){
   const ms=new Date(t.due+"T23:59:59")-new Date();
   return ms<0?"late":ms<172800000?"soon":"ok";
 }
+async function copyText(txt){
+  try{await navigator.clipboard.writeText(txt);return true}catch(e){}
+  try{const ta=document.createElement("textarea");ta.value=txt;ta.style.cssText="position:fixed;opacity:0";document.body.append(ta);ta.select();const ok=document.execCommand("copy");ta.remove();return ok}catch(e){return false}
+}
+const buildCopy=(title,desc,ctx)=>[title,desc,ctx].filter(Boolean).join("\n\n");
+function flash(b,ok){
+  const o=b.dataset.label||(b.dataset.label=b.textContent);
+  b.textContent=ok?"Copied":"Copy failed";
+  clearTimeout(b._t);b._t=setTimeout(()=>{b.textContent=o},1600);
+}
 function icon(type){
   const s=el("span","ico");s.setAttribute("role","img");s.setAttribute("aria-label",type==="bug"?"Bug":"Feature");
   s.innerHTML=type==="bug"
@@ -228,10 +247,13 @@ function card(t){
   if(!t.due)meta.lastChild.textContent="No due date";
   c.append(icon(t.type),top,el("h3",null,t.title),el("p",null,t.description||""),meta,el("div","ro","Created "+fmt(t.created)));
   c.lastChild.style.margin="8px 0 0";
+  const cb=el("button","copy","Copy context");cb.type="button";
+  cb.addEventListener("click",async e=>{e.stopPropagation();flash(cb,await copyText(buildCopy(t.title,t.description,t.context)))});
+  c.append(cb);
   c.addEventListener("dragstart",e=>{dragId=t.id;c.classList.add("dragging");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",t.id)});
   c.addEventListener("dragend",()=>c.classList.remove("dragging"));
   c.addEventListener("click",()=>openDlg(t));
-  c.addEventListener("keydown",e=>{if(e.key==="Enter")openDlg(t)});
+  c.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target===c)openDlg(t)});
   return c;
 }
 
@@ -301,6 +323,7 @@ mf.addEventListener("submit",e=>{
   members.push(n);saveMembers();renderMembers();mdlg.close();
 });
 setInterval(()=>{if(!dlg.open&&!$("viewK").hidden&&!document.querySelector(".dragging"))render()},300000);
+$("copyCtx").onclick=async()=>{const b=$("copyCtx");flash(b,await copyText(buildCopy(f.title.value.trim(),f.description.value.trim(),f.context.value.trim())))};
 $("add").onclick=()=>openDlg(null);
 $("cancel").onclick=()=>dlg.close();
 $("del").onclick=()=>{if(editing&&confirm("Delete this task? This can’t be undone.")){state.tasks=state.tasks.filter(t=>t!==editing);save();render();dlg.close()}};
