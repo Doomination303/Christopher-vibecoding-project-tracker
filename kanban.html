@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Project Kanban Board</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e8ecf0;--col:#f5f7f9;--card:#fff;--ink:#17212b;--mute:#5d6b79;--line:#d2d9e0;--feat:#1d6fd1;--bug:#c93b3b;--over:#b4232a;--btn:#17212b;--btn-ink:#fff;--focus:#1d6fd1;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e141a;--col:#161e26;--card:#1e2832;--ink:#e6ecf2;--mute:#92a1b0;--line:#2c3844;--feat:#5aa2f2;--bug:#f07878;--over:#ff8c8c;--btn:#e6ecf2;--btn-ink:#0e141a;--focus:#5aa2f2;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e141a;--col:#161e26;--card:#1e2832;--ink:#e6ecf2;--mute:#92a1b0;--line:#2c3844;--feat:#5aa2f2;--bug:#f07878;--over:#ff8c8c;--btn:#e6ecf2;--btn-ink:#0e141a;--focus:#5aa2f2;color-scheme:dark}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:400 15px/1.45 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;padding:20px 24px 8px}
+header>div{text-align:center}
+#add{justify-self:end}
+h1{margin:0;font-size:22px;font-weight:600;letter-spacing:-.01em}
+.sub{color:var(--mute);font-size:13px;margin-top:2px}
+button,input,select,textarea{font:inherit;color:inherit}
+.btn{background:var(--btn);color:var(--btn-ink);border:0;border-radius:6px;padding:9px 16px;font-weight:500;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:transparent;color:var(--over);border:1px solid var(--line);margin-right:auto}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.scroller{overflow-x:auto;padding:12px 24px 28px}
+.board{display:grid;grid-template-columns:repeat(4,minmax(260px,1fr));gap:14px;min-width:1080px;align-items:start}
+.col{background:var(--col);border:1px solid var(--line);border-radius:10px;padding:10px;min-height:260px}
+.col.over{outline:2px dashed var(--focus);outline-offset:-4px}
+.col h2{margin:2px 4px 10px;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--c)}
+.count{margin-left:auto;color:var(--mute);font-weight:500;font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--t);border-radius:6px;padding:10px 12px;margin-bottom:9px;cursor:grab}
+.card.dragging{opacity:.45}
+.top{display:flex;justify-content:space-between;color:var(--mute);font-size:12px}
+.type{color:var(--t);font-weight:600}
+.card h3{margin:4px 0 4px;font-size:15px;font-weight:600}
+.card p{margin:0 0 10px;color:var(--mute);font-size:13px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.meta{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mute)}
+.av{width:22px;height:22px;border-radius:50%;background:var(--line);color:var(--ink);display:grid;place-items:center;font-size:10px;font-weight:600}
+.due{margin-left:auto}
+.due.late{color:var(--over);font-weight:600}
+.empty{color:var(--mute);font-size:13px;padding:10px 6px}
+dialog{border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);width:min(480px,calc(100vw - 24px));padding:20px}
+dialog::backdrop{background:rgba(10,15,20,.55)}
+dialog h2{margin:0 0 14px;font-size:18px}
+label{display:block;font-size:13px;font-weight:500;margin-bottom:12px}
+label input,label select,label textarea{display:block;width:100%;margin-top:4px;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:6px}
+textarea{min-height:80px;resize:vertical}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ro{font-size:12px;color:var(--mute);margin:-4px 0 12px}
+.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
+</style>
+</head>
+<body>
+<header>
+  <span></span>
+  <div><h1>Project Kanban Board</h1><div class="sub" id="sum"></div></div>
+  <button class="btn" id="add">New task</button>
+</header>
+<div class="scroller"><main class="board" id="board"></main></div>
+
+<dialog id="dlg">
+  <form id="f">
+    <h2 id="dt">New task</h2>
+    <div class="ro" id="ro"></div>
+    <label>Title<input name="title" required maxlength="100"></label>
+    <label>Description<textarea name="description"></textarea></label>
+    <div class="row">
+      <label>Type<select name="type"><option value="feature">Feature</option><option value="bug">Bug</option></select></label>
+      <label>Status<select name="status"></select></label>
+    </div>
+    <div class="row">
+      <label>Assignee<input name="assignee" maxlength="40"></label>
+      <label>Due date<input type="date" name="due"></label>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn danger" id="del">Delete task</button>
+      <button type="button" class="btn ghost" id="cancel">Cancel</button>
+      <button type="submit" class="btn">Save task</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+const COLS=[["todo","To Do","#8a97a5"],["inprogress","In Progress","#1d6fd1"],["review","Review","#c98a14"],["done","Done","#2f9e6b"]];
+const KEY="kanban-board-v1";
+const iso=d=>d.toISOString().slice(0,10);
+const off=n=>{const d=new Date();d.setDate(d.getDate()+n);return iso(d)};
+const fmt=s=>s?new Date(s+"T00:00").toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"}):"No due date";
+const mk=(n)=>"TASK-"+String(n).padStart(3,"0");
+
+function seed(){
+  const t=(n,title,description,type,status,assignee,due,created)=>({id:mk(n),title,description,type,status,assignee,due,created});
+  return {next:7,tasks:[
+    t(1,"Design onboarding screens","Sketch the three welcome screens and agree the copy with the team.","feature","done","Maya Patel",off(-3),off(-12)),
+    t(2,"Login fails on Safari","Users on Safari 17 see a blank page after submitting the login form.","bug","inprogress","Tom Reyes",off(1),off(-5)),
+    t(3,"Add CSV export","Let admins download the customer list as a CSV file.","feature","todo","Priya Nair",off(9),off(-2)),
+    t(4,"Fix duplicate emails","Two confirmation emails are sent when a user changes their address.","bug","review","Maya Patel",off(-1),off(-7)),
+    t(5,"Dark mode for settings page","Apply the shared colour tokens to the settings screens.","feature","inprogress","Sam Okafor",off(4),off(-4)),
+    t(6,"Update API docs","Document the new pagination parameters.","feature","todo","",off(14),off(0))
+  ]};
+}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Array.isArray(s.tasks))return s}catch(e){}return seed()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+let state=load(), editing=null, dragId=null;
+
+const $=id=>document.getElementById(id);
+const el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e};
+const initials=n=>n.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase()||"?";
+
+function render(){
+  const board=$("board");board.textContent="";
+  COLS.forEach(([key,name,color])=>{
+    const tasks=state.tasks.filter(t=>t.status===key);
+    const col=el("section","col");col.style.setProperty("--c",color);
+    const h=el("h2");h.append(el("span","dot"),name,el("span","count",tasks.length));
+    col.append(h);
+    col.addEventListener("dragover",e=>{e.preventDefault();col.classList.add("over")});
+    col.addEventListener("dragleave",e=>{if(!col.contains(e.relatedTarget))col.classList.remove("over")});
+    col.addEventListener("drop",e=>{e.preventDefault();col.classList.remove("over");const t=state.tasks.find(x=>x.id===dragId);if(t&&t.status!==key){t.status=key;save();render()}});
+    if(!tasks.length)col.append(el("div","empty","No tasks here. Drag one in or add a new task."));
+    tasks.forEach(t=>col.append(card(t)));
+    board.append(col);
+  });
+  const done=state.tasks.filter(t=>t.status==="done").length;
+  $("sum").textContent=state.tasks.length+" tasks, "+done+" done";
+}
+function card(t){
+  const c=el("article","card");c.style.setProperty("--t",t.type==="bug"?"var(--bug)":"var(--feat)");
+  c.draggable=true;c.tabIndex=0;c.setAttribute("aria-label","Edit "+t.id+": "+t.title);
+  const top=el("div","top");top.append(el("span",null,t.id),el("span","type",t.type==="bug"?"Bug":"Feature"));
+  const meta=el("div","meta");
+  const late=t.due&&t.status!=="done"&&t.due<iso(new Date());
+  const av=el("span","av",initials(t.assignee||""));
+  meta.append(av,el("span",null,t.assignee||"Unassigned"),el("span","due"+(late?" late":""),(late?"Overdue: ":"Due ")+fmt(t.due)));
+  if(!t.due)meta.lastChild.textContent="No due date";
+  c.append(top,el("h3",null,t.title),el("p",null,t.description||""),meta,el("div","ro","Created "+fmt(t.created)));
+  c.lastChild.style.margin="8px 0 0";
+  c.addEventListener("dragstart",e=>{dragId=t.id;c.classList.add("dragging");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",t.id)});
+  c.addEventListener("dragend",()=>c.classList.remove("dragging"));
+  c.addEventListener("click",()=>openDlg(t));
+  c.addEventListener("keydown",e=>{if(e.key==="Enter")openDlg(t)});
+  return c;
+}
+
+const f=$("f"),dlg=$("dlg");
+COLS.forEach(([k,n])=>{const o=document.createElement("option");o.value=k;o.textContent=n;f.status.append(o)});
+function openDlg(t){
+  editing=t||null;
+  $("dt").textContent=t?"Edit task":"New task";
+  $("ro").textContent=t?t.id+" · Created "+fmt(t.created):"A unique ID and the created date are added automatically.";
+  f.title.value=t?t.title:"";f.description.value=t?t.description:"";
+  f.type.value=t?t.type:"feature";f.status.value=t?t.status:"todo";
+  f.assignee.value=t?t.assignee:"";f.due.value=t?t.due:"";
+  $("del").style.display=t?"":"none";
+  dlg.showModal();f.title.focus();
+}
+f.addEventListener("submit",e=>{
+  e.preventDefault();
+  const v={title:f.title.value.trim(),description:f.description.value.trim(),type:f.type.value,status:f.status.value,assignee:f.assignee.value.trim(),due:f.due.value};
+  if(!v.title)return;
+  if(editing)Object.assign(editing,v);
+  else state.tasks.push({id:mk(state.next++),created:iso(new Date()),...v});
+  save();render();dlg.close();
+});
+$("add").onclick=()=>openDlg(null);
+$("cancel").onclick=()=>dlg.close();
+$("del").onclick=()=>{if(editing&&confirm("Delete "+editing.id+"? This can’t be undone.")){state.tasks=state.tasks.filter(t=>t!==editing);save();render();dlg.close()}};
+render();
+</script>
+</body>
+</html>

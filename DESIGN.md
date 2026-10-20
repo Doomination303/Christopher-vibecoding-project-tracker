@@ -12,7 +12,7 @@
 
 One sentence that captures the feeling the tracker should leave you with.
 
-`<TODO>`
+The tracker should leave users feeling satisfied and accomplished afterwards.
 
 Two or three references that capture the vibe (links to dribbble shots, screenshots of apps you admire, Pinterest boards — anything visual):
 
@@ -76,7 +76,7 @@ Suggested sizes (override only if the design demands it):
 One short sentence per element. These set the tone for the build phase — Person A's modal and Person B's anchor board should both feel like they came from this doc.
 
 - **Cards:** `<TODO>` (e.g. "Light, almost weightless; the only weight is from a 1px border, no shadow except on hover.")
-- **Buttons:** `<TODO>` (e.g. "Solid fill, no gradient, generous padding, rounded-md.")
+- **Buttons:** `Solid fill, changes shade when hovered over.  Generouse padding between buttons.` (e.g. "Solid fill, no gradient, generous padding, rounded-md.")
 - **Modal:** `<TODO>` (e.g. "Centered, max-width-md, slate-900 backdrop at 50% opacity.")
 - **Empty states:** `<TODO>` (e.g. "Dashed border, muted text, never sad.")
 - **Drag affordance (if used):** `<TODO>` (e.g. "None — we use a status dropdown.")
@@ -87,17 +87,17 @@ Three lines of microcopy that capture the tone of the product. Keep it short —
 
 | Where | Text |
 |---|---|
-| "+" button label | `<TODO>` (e.g. "+ Task" or "Add task" or "New") |
-| Empty column placeholder | `<TODO>` (e.g. "Nothing here yet — keep going.") |
-| Toast after "Copy as Prompt Context" | `<TODO>` (e.g. "Copied. Now paste it into the AI.") |
-| Confirm-delete message | `<TODO>` (e.g. "Delete this task? You can't undo.") |
-| Handoff toast (M7 `task-owner`) | `<TODO>` (e.g. "Handed off to {name}. They've got it.") |
+| "+" button label | `Add` (e.g. "+ Task" or "Add task" or "New") |
+| Empty column placeholder | `Empty` (e.g. "Nothing here yet — keep going.") |
+| Toast after "Copy as Prompt Context" | `Copy` (e.g. "Copied. Now paste it into the AI.") |
+| Confirm-delete message | `Are you sure you want to delete this` (e.g. "Delete this task? You can't undo.") |
+| Handoff toast (M7 `task-owner`) | `Task successfully handed to {name}.` (e.g. "Handed off to {name}. They've got it.") |
 
 ## 6. Logo / wordmark
 
 The tracker probably doesn't need a logo, but it does need a name and a wordmark style.
 
-- **Product name:** `<TODO>` (match PRD §11 team identity)
+- **Product name:** `Kanban Pro` (match PRD §11 team identity)
 - **Wordmark style:** `<TODO>` (e.g. "Just the name in the heading font, brand-primary color, no icon.")
 
 ## 7. Out of scope (this hackathon)
