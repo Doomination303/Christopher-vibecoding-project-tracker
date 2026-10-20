@@ -42,6 +42,13 @@ button,input,select,textarea{font:inherit;color:inherit}
 .empty{color:var(--mute);font-size:13px;padding:10px 6px}
 .card .top,.card p,.card .meta,.card .ro{color:var(--ink)}
 .card p{font-size:14px}
+.card{position:relative;background:var(--cb);color:#17212b;border:1px solid rgba(0,0,0,.3)}
+.card .top,.card p,.card .meta,.card .ro,.card .type{color:#17212b}
+.card .due.late{color:#5c0a0e;text-decoration:underline}
+.card .av{background:rgba(255,255,255,.6);color:#17212b}
+.card h3{padding-right:30px}
+.ico{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.6);display:grid;place-items:center;color:#17212b}
+.ico svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 dialog{border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);width:min(480px,calc(100vw - 24px));padding:20px}
 dialog::backdrop{background:rgba(10,15,20,.55)}
 dialog h2{margin:0 0 14px;font-size:18px}
@@ -108,6 +115,13 @@ let state=load(), editing=null, dragId=null;
 
 const $=id=>document.getElementById(id);
 const el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e};
+function icon(type){
+  const s=el("span","ico");s.setAttribute("role","img");s.setAttribute("aria-label",type==="bug"?"Bug":"Feature");
+  s.innerHTML=type==="bug"
+    ?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2l1.9 1.9M16 2l-1.9 1.9M9 7.1v-1a3 3 0 0 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6z"/><path d="M12 20v-9M6.5 13H2M3 21c0-2.1 1.7-3.9 3.8-4M20.9 21c0-2.1-1.7-3.9-3.8-4M22 13h-4.5"/></svg>'
+    :'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6-4.5-4.2 6.1-.7z"/></svg>';
+  return s;
+}
 const initials=n=>n.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase()||"?";
 
 function render(){
@@ -128,7 +142,7 @@ function render(){
   $("sum").textContent=state.tasks.length+" tasks, "+done+" done";
 }
 function card(t){
-  const c=el("article","card");c.style.setProperty("--t",t.type==="bug"?"var(--bug)":"var(--feat)");
+  const c=el("article","card");c.style.setProperty("--cb",t.type==="bug"?"#ff7663":"#99ffb4");
   c.draggable=true;c.tabIndex=0;c.setAttribute("aria-label","Edit task: "+t.title);
   const top=el("div","top");top.append(el("span","type",t.type==="bug"?"Bug":"Feature"));
   const meta=el("div","meta");
@@ -136,7 +150,7 @@ function card(t){
   const av=el("span","av",initials(t.assignee||""));
   meta.append(av,el("span",null,t.assignee||"Unassigned"),el("span","due"+(late?" late":""),(late?"Overdue: ":"Due ")+fmt(t.due)));
   if(!t.due)meta.lastChild.textContent="No due date";
-  c.append(top,el("h3",null,t.title),el("p",null,t.description||""),meta,el("div","ro","Created "+fmt(t.created)));
+  c.append(icon(t.type),top,el("h3",null,t.title),el("p",null,t.description||""),meta,el("div","ro","Created "+fmt(t.created)));
   c.lastChild.style.margin="8px 0 0";
   c.addEventListener("dragstart",e=>{dragId=t.id;c.classList.add("dragging");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",t.id)});
   c.addEventListener("dragend",()=>c.classList.remove("dragging"));
