@@ -40,6 +40,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 .due{margin-left:auto}
 .due.late{color:var(--over);font-weight:600}
 .empty{color:var(--mute);font-size:13px;padding:10px 6px}
+.card .top,.card p,.card .meta,.card .ro{color:var(--ink)}
+.card p{font-size:14px}
 dialog{border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);width:min(480px,calc(100vw - 24px));padding:20px}
 dialog::backdrop{background:rgba(10,15,20,.55)}
 dialog h2{margin:0 0 14px;font-size:18px}
@@ -127,8 +129,8 @@ function render(){
 }
 function card(t){
   const c=el("article","card");c.style.setProperty("--t",t.type==="bug"?"var(--bug)":"var(--feat)");
-  c.draggable=true;c.tabIndex=0;c.setAttribute("aria-label","Edit "+t.id+": "+t.title);
-  const top=el("div","top");top.append(el("span",null,t.id),el("span","type",t.type==="bug"?"Bug":"Feature"));
+  c.draggable=true;c.tabIndex=0;c.setAttribute("aria-label","Edit task: "+t.title);
+  const top=el("div","top");top.append(el("span","type",t.type==="bug"?"Bug":"Feature"));
   const meta=el("div","meta");
   const late=t.due&&t.status!=="done"&&t.due<iso(new Date());
   const av=el("span","av",initials(t.assignee||""));
@@ -148,7 +150,7 @@ COLS.forEach(([k,n])=>{const o=document.createElement("option");o.value=k;o.text
 function openDlg(t){
   editing=t||null;
   $("dt").textContent=t?"Edit task":"New task";
-  $("ro").textContent=t?t.id+" · Created "+fmt(t.created):"A unique ID and the created date are added automatically.";
+  $("ro").textContent=t?"Created "+fmt(t.created):"The created date is added automatically.";
   f.title.value=t?t.title:"";f.description.value=t?t.description:"";
   f.type.value=t?t.type:"feature";f.status.value=t?t.status:"todo";
   f.assignee.value=t?t.assignee:"";f.due.value=t?t.due:"";
@@ -165,7 +167,7 @@ f.addEventListener("submit",e=>{
 });
 $("add").onclick=()=>openDlg(null);
 $("cancel").onclick=()=>dlg.close();
-$("del").onclick=()=>{if(editing&&confirm("Delete "+editing.id+"? This can’t be undone.")){state.tasks=state.tasks.filter(t=>t!==editing);save();render();dlg.close()}};
+$("del").onclick=()=>{if(editing&&confirm("Delete this task? This can’t be undone.")){state.tasks=state.tasks.filter(t=>t!==editing);save();render();dlg.close()}};
 render();
 </script>
 </body>
