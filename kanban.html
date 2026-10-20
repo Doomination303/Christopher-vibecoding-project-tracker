@@ -162,6 +162,13 @@ let state=load(), editing=null, dragId=null;
 
 const $=id=>document.getElementById(id);
 const el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e};
+const COLORS={done:"#e0fffc",late:"#ff7663",soon:"#fbff87",ok:"#99ffb4"};
+function urgency(t){
+  if(t.status==="done")return "done";
+  if(!t.due)return "ok";
+  const ms=new Date(t.due+"T23:59:59")-new Date();
+  return ms<0?"late":ms<172800000?"soon":"ok";
+}
 function icon(type){
   const s=el("span","ico");s.setAttribute("role","img");s.setAttribute("aria-label",type==="bug"?"Bug":"Feature");
   s.innerHTML=type==="bug"
@@ -189,11 +196,11 @@ function render(){
   $("sum").textContent=state.tasks.length+" tasks, "+done+" done";
 }
 function card(t){
-  const c=el("article","card");c.style.setProperty("--cb",t.type==="bug"?"#ff7663":"#99ffb4");
+  const c=el("article","card");c.style.setProperty("--cb",COLORS[urgency(t)]);
   c.draggable=true;c.tabIndex=0;c.setAttribute("aria-label","Edit task: "+t.title);
   const top=el("div","top");top.append(el("span","type",t.type==="bug"?"Bug":"Feature"));
   const meta=el("div","meta");
-  const late=t.due&&t.status!=="done"&&t.due<iso(new Date());
+  const late=urgency(t)==="late";
   const av=el("span","av",initials(t.assignee||""));
   meta.append(av,el("span",null,t.assignee||"Unassigned"),el("span","due"+(late?" late":""),(late?"Overdue: ":"Due ")+fmt(t.due)));
   if(!t.due)meta.lastChild.textContent="No due date";
@@ -264,6 +271,7 @@ mf.addEventListener("submit",e=>{
   if(members.some(m=>m.toLowerCase()===n.toLowerCase())){$("merr").textContent="That member is already on the team.";return}
   members.push(n);saveMembers();renderMembers();mdlg.close();
 });
+setInterval(()=>{if(!dlg.open&&!$("viewK").hidden&&!document.querySelector(".dragging"))render()},300000);
 $("add").onclick=()=>openDlg(null);
 $("cancel").onclick=()=>dlg.close();
 $("del").onclick=()=>{if(editing&&confirm("Delete this task? This can’t be undone.")){state.tasks=state.tasks.filter(t=>t!==editing);save();render();dlg.close()}};
