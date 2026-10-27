@@ -4,111 +4,234 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Project Kanban Board</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Applies the saved theme before the page paints, so there is no flash of the wrong theme. -->
+<script>try{var _s=JSON.parse(localStorage.getItem("kanban-settings-v1"))||{};document.documentElement.dataset.theme=(_s.theme==="dark"||_s.theme==="hc")?_s.theme:"light"}catch(e){document.documentElement.dataset.theme="light"}</script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#e8ecf0;--col:#f5f7f9;--card:#fff;--ink:#17212b;--mute:#5d6b79;--line:#d2d9e0;--feat:#1d6fd1;--bug:#c93b3b;--over:#b4232a;--btn:#17212b;--btn-ink:#fff;--focus:#1d6fd1;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+/* Default (light) theme: colours, font and font size. Everything below reads these variables. */
+:root{--fs:16px;--font:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--bg:#e8ecf0;--col:#f5f7f9;--card:#fff;--ink:#17212b;--mute:#5d6b79;--line:#d2d9e0;--feat:#1d6fd1;--bug:#c93b3b;--over:#b4232a;--btn:#17212b;--btn-ink:#fff;--focus:#1d6fd1;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+/* Dark colours when the device prefers dark and light has not been forced. */
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e141a;--col:#161e26;--card:#1e2832;--ink:#e6ecf2;--mute:#92a1b0;--line:#2c3844;--feat:#5aa2f2;--bug:#f07878;--over:#ff8c8c;--btn:#e6ecf2;--btn-ink:#0e141a;--focus:#5aa2f2;color-scheme:dark}}
+/* Dark theme chosen on the Settings page. */
 :root[data-theme="dark"]{--bg:#0e141a;--col:#161e26;--card:#1e2832;--ink:#e6ecf2;--mute:#92a1b0;--line:#2c3844;--feat:#5aa2f2;--bug:#f07878;--over:#ff8c8c;--btn:#e6ecf2;--btn-ink:#0e141a;--focus:#5aa2f2;color-scheme:dark}
+/* High-contrast theme (black page, white text and borders, yellow buttons) and its tweaks. */
+:root[data-theme="hc"]{--bg:#000;--col:#000;--card:#000;--ink:#fff;--mute:#fff;--line:#fff;--feat:#6cf;--bug:#ff8080;--over:#ff9d9d;--btn:#ff0;--btn-ink:#000;--focus:#ff0;color-scheme:dark}
+:root[data-theme="hc"] .card{border-color:#fff}
+:root[data-theme="hc"] :focus-visible{outline-width:3px}
+:root[data-theme="hc"] .mlist .av{color:#000}
+/* Basic reset and page sizing. */
 *,*::before,*::after{box-sizing:inherit}
 html{height:100%}
-body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:400 15px/1.45 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:400 var(--fs)/1.45 var(--font)}
+/* Page header: empty left cell, centred title, controls on the right. */
 header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;padding:20px 24px 8px}
 header>div{text-align:center}
 #add{justify-self:end}
-h1{margin:0;font-size:22px;font-weight:600;letter-spacing:-.01em}
-.sub{color:var(--mute);font-size:13px;margin-top:2px}
+h1{margin:0;font-size:calc(var(--fs)*1.4);font-weight:600;letter-spacing:-.01em}
+.sub{color:var(--mute);font-size:var(--fs);margin-top:2px}
+/* Form controls use the page font and colour. */
 button,input,select,textarea{font:inherit;color:inherit}
+/* Button styles. */
 .btn{background:var(--btn);color:var(--btn-ink);border:0;border-radius:6px;padding:9px 16px;font-weight:500;cursor:pointer}
 .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .btn.danger{background:transparent;color:var(--over);border:1px solid var(--line);margin-right:auto}
 :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+/* Board area: scrolls sideways on narrow screens. Columns and cards follow. */
 .scroller{overflow-x:auto;padding:12px 24px 28px}
 .board{display:grid;grid-template-columns:repeat(4,minmax(260px,1fr));gap:14px;min-width:1080px;align-items:start}
 .col{background:var(--col);border:1px solid var(--line);border-radius:10px;padding:10px;min-height:260px}
 .col.over{outline:2px dashed var(--focus);outline-offset:-4px}
-.col h2{margin:2px 4px 10px;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+.col h2{margin:2px 4px 10px;font-size:var(--fs);font-weight:600;display:flex;align-items:center;gap:8px}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--c)}
-.count{margin-left:auto;color:var(--mute);font-weight:500;font-size:13px}
+.count{margin-left:auto;color:var(--mute);font-weight:500;font-size:var(--fs)}
+/* Task card base styles (colours are overridden further down). */
 .card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--t);border-radius:6px;padding:10px 12px;margin-bottom:9px;cursor:grab}
 .card.dragging{opacity:.45}
-.top{display:flex;justify-content:space-between;color:var(--mute);font-size:12px}
+.top{display:flex;justify-content:space-between;color:var(--mute);font-size:var(--fs)}
 .type{color:var(--t);font-weight:600}
-.card h3{margin:4px 0 4px;font-size:15px;font-weight:600}
-.card p{margin:0 0 10px;color:var(--mute);font-size:13px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.meta{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mute)}
-.av{width:22px;height:22px;border-radius:50%;background:var(--line);color:var(--ink);display:grid;place-items:center;font-size:10px;font-weight:600}
+.card h3{margin:4px 0 4px;font-size:var(--fs);font-weight:600}
+.card p{margin:0 0 10px;color:var(--mute);font-size:var(--fs);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:var(--fs);color:var(--mute)}
+.av{width:calc(var(--fs)*2.2);height:calc(var(--fs)*2.2);border-radius:50%;background:var(--line);color:var(--ink);display:grid;place-items:center;font-size:var(--fs);font-weight:600}
 .due{margin-left:auto}
 .due.late{color:var(--over);font-weight:600}
-.empty{color:var(--mute);font-size:13px;padding:10px 6px}
+/* Message shown in an empty column. */
+.empty{color:var(--mute);font-size:var(--fs);padding:10px 6px}
+/* Makes the hidden attribute always hide a page. */
 [hidden]{display:none!important}
+/* App layout and left navbar. */
 .app{display:flex;min-height:100vh}
-.nav{flex:none;width:190px;position:sticky;top:0;align-self:flex-start;height:100vh;background:var(--col);border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:6px}
+.nav{flex:none;width:calc(var(--fs)*12);position:sticky;top:0;align-self:flex-start;height:100vh;background:var(--col);border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:6px}
 .nav button{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;border-radius:6px;padding:10px 12px;text-align:left;cursor:pointer;font-weight:500}
 .nav button[aria-current="page"]{background:var(--btn);color:var(--btn-ink)}
 .nav svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .content{flex:1;min-width:0}
+/* Members page list. */
 .mwrap{padding:12px 24px 28px;max-width:560px;margin:0 auto}
 .mlist{list-style:none;margin:14px 0 0;padding:0}
 .mlist li{display:flex;align-items:center;gap:12px;background:var(--col);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px}
-.mlist .av{width:32px;height:32px;font-size:12px}
+.mlist .av{width:calc(var(--fs)*2.4);height:calc(var(--fs)*2.4);font-size:var(--fs)}
 .mname{font-weight:600}
 .mlist .btn.sm{margin:0 0 0 auto}
+/* Text in the remove-member window. */
 .rp{margin:0 0 16px}
+/* New task button and filter in the header. */
+.hright{justify-self:end;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:12px}
+.hright label{display:flex;align-items:center;gap:8px;margin:0;white-space:nowrap}
+.hright label select{display:block;width:auto;margin-top:0}
+/* Settings page radio options. */
+.opts{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:8px}
+.opt{display:flex;align-items:center;gap:8px;background:var(--col);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+.opt label{margin:0;font-weight:500}
+.opt input{width:18px;height:18px;margin:0;accent-color:var(--btn)}
+.nav .logo{margin-bottom:10px;padding:6px 4px;font-size:var(--fs);font-weight:600}
+.nav .logo svg{width:32px;height:32px}
+/* Home and Settings page content and the colour key. */
+.home{max-width:680px;margin:0 auto;padding:12px 24px 32px}
+.home h2{font-size:calc(var(--fs)*1.1);margin:24px 0 8px}
+.home p{margin:0 0 8px}
+.home ol{padding-left:22px;margin:0}
+.home li{margin-bottom:8px}
+.legend{list-style:none;padding:0;margin:0}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid rgba(0,0,0,.4);margin-right:8px;vertical-align:-1px}
+/* Link cards above the board. */
 .links{display:grid;grid-template-columns:repeat(4,minmax(260px,1fr));gap:14px;min-width:1080px;margin-bottom:14px}
 .lcard{background:var(--col);border:1px solid var(--line);border-radius:10px;padding:12px}
-.lcard label{margin:0 0 8px;font-size:15px;font-weight:600}
+.lcard label{margin:0 0 8px;font-size:var(--fs);font-weight:600}
 .lcard input{display:block;width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:6px}
 .lcard input::placeholder{color:var(--mute);opacity:1}
-.btn.sm{padding:6px 12px;font-size:13px;margin-bottom:12px}
+.btn.sm{padding:6px 12px;font-size:var(--fs);margin-bottom:12px}
+/* Copy context button and AI tool dropdown row in the task window. */
 .toolrow{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:12px}
 .toolrow .btn.sm{margin-bottom:0;flex:none}
 .toolrow label{display:flex;align-items:center;gap:8px;margin:0;flex:1}
 .toolrow label select{margin-top:0;flex:1;min-width:0}
-.card .copy{margin-top:10px;background:rgba(255,255,255,.6);color:#17212b;border:1px solid rgba(0,0,0,.35);border-radius:6px;padding:5px 10px;font-size:13px;font-weight:500;cursor:pointer}
-.err{color:var(--over);font-size:13px;margin:-4px 0 10px}
+.card .copy{margin-top:10px;background:color-mix(in srgb,var(--ct) 10%,transparent);color:var(--ct);border:1px solid var(--ct);border-radius:6px;padding:5px 10px;font-size:var(--fs);font-weight:500;cursor:pointer}
+/* Error text (for example a duplicate member name). */
+.err{color:var(--over);font-size:var(--fs);margin:-4px 0 10px}
+/* Small screens: the navbar shrinks to icons only. */
 @media (max-width:600px){.nav{width:60px;padding:12px 8px}.nav span{display:none}.nav button{justify-content:center;padding:10px}}
 .card .top,.card p,.card .meta,.card .ro{color:var(--ink)}
-.card p{font-size:14px}
-.card{position:relative;background:var(--cb);color:#17212b;border:3px solid #000}
-.card .top,.card p,.card .meta,.card .ro,.card .type{color:#17212b}
-.card .due.late{color:#5c0a0e;text-decoration:underline}
-.card .av{background:rgba(255,255,255,.6);color:#17212b}
+.card p{font-size:var(--fs)}
+/* Card colours: JS sets --cb (background from due date) and --ct (text colour with 4.5:1 contrast). */
+.card{position:relative;background:var(--cb);color:var(--ct);border:3px solid #000}
+.card .top,.card p,.card .meta,.card .ro,.card .type{color:var(--ct)}
+.card .due.late{color:var(--ct);text-decoration:underline}
+.card .av{background:color-mix(in srgb,var(--ct) 14%,transparent);color:var(--ct)}
 .card h3{padding-right:30px}
-.ico{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.6);display:grid;place-items:center;color:#17212b}
+/* Feature/bug icon in the card corner. */
+.ico{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:color-mix(in srgb,var(--ct) 14%,transparent);display:grid;place-items:center;color:var(--ct)}
 .ico svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* Pop-up windows and form fields. */
 dialog{max-height:calc(100vh - 24px);overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);width:min(480px,calc(100vw - 24px));padding:20px}
 dialog::backdrop{background:rgba(10,15,20,.55)}
-dialog h2{margin:0 0 14px;font-size:18px}
-label{display:block;font-size:13px;font-weight:500;margin-bottom:12px}
+dialog h2{margin:0 0 14px;font-size:calc(var(--fs)*1.15)}
+label{display:block;font-size:var(--fs);font-weight:500;margin-bottom:12px}
 label input,label select,label textarea{display:block;width:100%;margin-top:4px;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:6px}
 textarea{min-height:80px;resize:vertical}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.ro{font-size:12px;color:var(--mute);margin:-4px 0 12px}
+.ro{font-size:var(--fs);color:var(--mute);margin:-4px 0 12px}
 .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
 </style>
 </head>
+<!-- Layout: navbar on the left, pages (Home, Kanban, Settings, Members) on the right. Only one page is visible at a time. -->
 <body>
 <div class="app">
+<!-- Left navbar. The logo and each button switch pages (see show() in the script). -->
 <nav class="nav" aria-label="Main">
-  <button id="navK" aria-current="page" aria-label="Kanban"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="13" rx="1"/></svg><span>Kanban</span></button>
+  <button class="logo" id="logo" aria-label="Project Kanban Board home page"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" style="fill:var(--btn);stroke:none"/><rect x="6" y="7" width="5" height="18" rx="1.5" style="fill:var(--btn-ink);stroke:none"/><rect x="13.5" y="7" width="5" height="11" rx="1.5" style="fill:var(--btn-ink);stroke:none"/><rect x="21" y="7" width="5" height="14" rx="1.5" style="fill:var(--btn-ink);stroke:none"/></svg><span>Kanban Board</span></button>
+  <button id="navH" aria-current="page" aria-label="Home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg><span>Home</span></button>
+  <button id="navK" aria-current="false" aria-label="Kanban"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="13" rx="1"/></svg><span>Kanban</span></button>
   <button id="navM" aria-current="false" aria-label="Members"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.3c2.2.7 3.5 2.6 3.5 5.7"/></svg><span>Members</span></button>
+  <button id="navS" aria-current="false" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span>Settings</span></button>
 </nav>
 <div class="content">
-<section id="viewK">
+<!-- HOME PAGE: title, what the app does, how to use it and the card colour key. -->
+<section id="viewH">
+<header>
+  <span></span>
+  <div><h1>Project Kanban Board</h1><div class="sub">Plan, assign and track your team’s work</div></div>
+  <span></span>
+</header>
+<div class="home">
+  <h2>What this app does</h2>
+  <p>Project Kanban Board helps your team plan and track work in one place. Tasks move across four columns: To Do, In Progress, Review and Done. Each task has a type, an assignee, a due date and context notes, and cards change color as due dates get closer so you can see what needs attention at a glance.</p>
+  <h2>How to use it</h2>
+  <ol>
+    <li>Open <strong>Kanban</strong> in the navbar to see the board.</li>
+    <li>Select <strong>New task</strong> to add a task with a title, description, type (feature or bug), status, assignee, due date and context.</li>
+    <li>Drag a card to another column, or click it and change its status, to show progress.</li>
+    <li>Click a card to edit it or delete it. Use <strong>Copy context</strong> on a card or in the task window to copy the title, description and context to your clipboard.</li>
+    <li>Use the four cards above the board to keep links to your presentation, report, demo and documentation.</li>
+    <li>Open <strong>Members</strong> to add or remove team members. Removing someone unassigns their tasks.</li>
+    <li>Open <strong>Settings</strong> to change the theme, font and text size.</li>
+  </ol>
+  <h2>What the card colors mean</h2>
+  <ul class="legend">
+    <li><span class="sw" style="background:#99ffb4"></span>Due in more than two days</li>
+    <li><span class="sw" style="background:#fbff87"></span>Due within two days</li>
+    <li><span class="sw" style="background:#ff7663"></span>Overdue</li>
+    <li><span class="sw" style="background:#e0fffc"></span>Done</li>
+  </ul>
+  <h2>Your data</h2>
+  <p>Tasks, members, links and settings are saved in this browser, so they stay when you reload the page. They aren’t shared with other people or devices.</p>
+</div>
+</section>
+<!-- KANBAN PAGE: header with New task button and filter, link cards, then the four columns. -->
+<section id="viewK" hidden>
 <header>
   <span></span>
   <div><h1>Project Kanban Board</h1><div class="sub" id="sum"></div></div>
-  <button class="btn" id="add">New task</button>
+  <!-- New task button and the "Show tasks for:" filter. -->
+  <div class="hright">
+    <button class="btn" id="add">New task</button>
+    <label>Show tasks for:<select id="filter"></select></label>
+  </div>
 </header>
 <div class="scroller">
+<!-- Link cards (Presentation, Report, Demo, Documentation). URLs are saved to local storage. -->
 <div class="links">
   <div class="lcard"><label for="l-presentation">Presentation</label><input id="l-presentation" type="url" data-link="presentation" placeholder="empty"></div>
   <div class="lcard"><label for="l-report">Report</label><input id="l-report" type="url" data-link="report" placeholder="empty"></div>
   <div class="lcard"><label for="l-demo">Demo</label><input id="l-demo" type="url" data-link="demo" placeholder="empty"></div>
   <div class="lcard"><label for="l-documentation">Documentation</label><input id="l-documentation" type="url" data-link="documentation" placeholder="empty"></div>
 </div>
+<!-- The four columns and their task cards are drawn here by render(). -->
 <main class="board" id="board"></main></div>
 </section>
+<!-- SETTINGS PAGE: theme, font and font size. Choices are saved to local storage. -->
+<section id="viewS" hidden>
+<header>
+  <span></span>
+  <div><h1>Settings</h1><div class="sub">Choose how the app looks</div></div>
+  <span></span>
+</header>
+<div class="home">
+  <h2>Theme</h2>
+  <div class="opts" role="radiogroup" aria-label="Theme">
+    <div class="opt"><input type="radio" id="th-light" name="theme" value="light"><label for="th-light">Light</label></div>
+    <div class="opt"><input type="radio" id="th-dark" name="theme" value="dark"><label for="th-dark">Dark</label></div>
+    <div class="opt"><input type="radio" id="th-hc" name="theme" value="hc"><label for="th-hc">High contrast</label></div>
+  </div>
+  <h2>Font</h2>
+  <label>Font family<select id="setFont">
+    <option value="plex">IBM Plex Sans (default)</option>
+    <option value="atkinson">Atkinson Hyperlegible</option>
+    <option value="system">System font</option>
+    <option value="serif">Georgia (serif)</option>
+    <option value="verdana">Verdana</option>
+    <option value="mono">Monospace</option>
+  </select></label>
+  <h2>Font size</h2>
+  <label>Text size<select id="setSize">
+    <option value="16">Default (16px)</option>
+    <option value="18">Large (18px)</option>
+    <option value="20">Larger (20px)</option>
+    <option value="22">Largest (22px)</option>
+  </select></label>
+</div>
+</section>
+<!-- MEMBERS PAGE: list of team members with Add and Remove buttons. -->
 <section id="viewM" hidden>
 <header>
   <span></span>
@@ -123,6 +246,7 @@ textarea{min-height:80px;resize:vertical}
 </div>
 </div>
 
+<!-- Task window: used to add a new task or edit/delete an existing one. -->
 <dialog id="dlg">
   <form id="f">
     <h2 id="dt">New task</h2>
@@ -151,6 +275,7 @@ textarea{min-height:80px;resize:vertical}
   </form>
 </dialog>
 
+<!-- Confirmation window shown before a member is removed. -->
 <dialog id="rdlg">
   <h2>Remove member?</h2>
   <p class="rp" id="rtext"></p>
@@ -160,6 +285,7 @@ textarea{min-height:80px;resize:vertical}
   </div>
 </dialog>
 
+<!-- Window for adding a new team member. -->
 <dialog id="mdlg">
   <form id="mf">
     <h2>Add member</h2>
@@ -173,13 +299,16 @@ textarea{min-height:80px;resize:vertical}
 </dialog>
 
 <script>
+// COLUMNS: key, display name and dot colour for each board column.
 const COLS=[["todo","To Do","#8a97a5"],["inprogress","In Progress","#1d6fd1"],["review","Review","#c98a14"],["done","Done","#2f9e6b"]];
+// Local storage key for tasks, plus small date/ID helpers.
 const KEY="kanban-board-v1";
 const iso=d=>d.toISOString().slice(0,10);
 const off=n=>{const d=new Date();d.setDate(d.getDate()+n);return iso(d)};
 const fmt=s=>s?new Date(s+"T00:00").toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"}):"No due date";
 const mk=(n)=>"TASK-"+String(n).padStart(3,"0");
 
+// Sample tasks used the first time the app opens.
 function seed(){
   const t=(n,title,description,type,status,assignee,due,created)=>({id:mk(n),title,description,type,status,assignee,due,created});
   return {next:7,tasks:[
@@ -191,9 +320,12 @@ function seed(){
     t(6,"Update API docs","Document the new pagination parameters.","feature","todo","",off(14),off(0))
   ]};
 }
+// Load tasks from local storage (falls back to the sample tasks) and save them back.
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Array.isArray(s.tasks))return s}catch(e){}return seed()}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+// App state: tasks, the task being edited and the card being dragged.
 let state=load(), editing=null, dragId=null;
+// Mock context text for the sample tasks.
 const MOCK={
 "TASK-001":"Design brief approved by product. Three screens: welcome, permissions and profile setup. Final copy signed off by marketing. Figma file shared in the design channel. Handoff is complete and engineering has started building it.",
 "TASK-002":"Reported by 4 users on Safari 17. After submitting the login form the page goes blank and no error shows in the console. Chrome and Firefox are not affected. Suspect the session cookie’s SameSite setting. To reproduce: open /login in Safari and submit valid credentials.",
@@ -202,6 +334,7 @@ const MOCK={
 "TASK-005":"Settings pages still use hard-coded colours. Switch them to the shared colour tokens and check contrast in light and dark mode. Pages left: notifications, billing and security. Attach before and after screenshots to the pull request.",
 "TASK-006":"The new pagination parameters (page, page_size and cursor) are missing from the API docs. Add request and response examples, and note the default page size of 25 and maximum of 100. Waiting on final endpoint names from the backend team."
 };
+// One-time fill: gives any task without context some mock text and a timestamp.
 (function(){
   let changed=false;
   state.tasks.forEach((t,i)=>{
@@ -214,15 +347,29 @@ const MOCK={
   if(changed)save();
 })();
 
+// Shortcuts: $ finds an element by id, el() creates an element with a class and text.
 const $=id=>document.getElementById(id);
 const el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e};
+// CARD COLOURS: background by urgency (done, overdue, due soon, due later).
 const COLORS={done:"#e0fffc",late:"#ff7663",soon:"#fbff87",ok:"#99ffb4"};
+// Works out text colour: relative luminance and contrast ratio, then picks text that meets 4.5:1.
+function lum(hex){
+  const c=[1,3,5].map(i=>{const v=parseInt(hex.substr(i,2),16)/255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4)});
+  return 0.2126*c[0]+0.7152*c[1]+0.0722*c[2];
+}
+function ratio(a,b){const l=[lum(a),lum(b)].sort((x,y)=>y-x);return (l[0]+0.05)/(l[1]+0.05)}
+function textFor(bg){
+  const opts=["#17212b","#000000","#ffffff"];
+  return opts.find(c=>ratio(c,bg)>=4.5)||(ratio("#000000",bg)>=ratio("#ffffff",bg)?"#000000":"#ffffff");
+}
+// Decides a task's urgency from its status and due date (end of the due day).
 function urgency(t){
   if(t.status==="done")return "done";
   if(!t.due)return "ok";
   const ms=new Date(t.due+"T23:59:59")-new Date();
   return ms<0?"late":ms<172800000?"soon":"ok";
 }
+// COPY CONTEXT: copies text to the clipboard (with a fallback) and shows brief button feedback.
 async function copyText(txt){
   try{await navigator.clipboard.writeText(txt);return true}catch(e){}
   try{const ta=document.createElement("textarea");ta.value=txt;ta.style.cssText="position:fixed;opacity:0";document.body.append(ta);ta.select();const ok=document.execCommand("copy");ta.remove();return ok}catch(e){return false}
@@ -233,6 +380,7 @@ function flash(b,ok){
   b.textContent=ok?"Copied":"Copy failed";
   clearTimeout(b._t);b._t=setTimeout(()=>{b.textContent=o},1600);
 }
+// Builds the feature (star) or bug icon shown in a card's corner.
 function icon(type){
   const s=el("span","ico");s.setAttribute("role","img");s.setAttribute("aria-label",type==="bug"?"Bug":"Feature");
   s.innerHTML=type==="bug"
@@ -240,12 +388,29 @@ function icon(type){
     :'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6-4.5-4.2 6.1-.7z"/></svg>';
   return s;
 }
+// Turns a name into initials for the avatar circle.
 const initials=n=>n.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase()||"?";
 
+// FILTER: "All", "Unassigned" or one member decides which tasks are visible.
+let filterMember="";
+const UN="__unassigned__";
+const vis=t=>!filterMember||(filterMember===UN?!t.assignee:t.assignee===filterMember);
+function fillFilter(){
+  const sel=$("filter"),key=members.join("\n");
+  if(sel.dataset.key!==key){
+    sel.textContent="";
+    [["","All"],[UN,"Unassigned"],...members.map(n=>[n,n])].forEach(([v,l])=>{const o=document.createElement("option");o.value=v;o.textContent=l;sel.append(o)});
+    sel.dataset.key=key;
+    if(filterMember!==UN&&!members.includes(filterMember))filterMember="";
+  }
+  sel.value=filterMember;
+}
+// Draws the four columns and their cards, applying the filter and updating the task count.
 function render(){
+  fillFilter();
   const board=$("board");board.textContent="";
   COLS.forEach(([key,name,color])=>{
-    const tasks=state.tasks.filter(t=>t.status===key);
+    const tasks=state.tasks.filter(t=>t.status===key&&vis(t));
     const col=el("section","col");col.style.setProperty("--c",color);
     const h=el("h2");h.append(el("span","dot"),name,el("span","count",tasks.length));
     col.append(h);
@@ -256,11 +421,12 @@ function render(){
     tasks.forEach(t=>col.append(card(t)));
     board.append(col);
   });
-  const done=state.tasks.filter(t=>t.status==="done").length;
-  $("sum").textContent=state.tasks.length+" tasks, "+done+" done";
+  const shown=state.tasks.filter(vis),done=shown.filter(t=>t.status==="done").length;
+  $("sum").textContent=shown.length+(shown.length===1?" task, ":" tasks, ")+done+" done"+(filterMember===UN?" (unassigned)":filterMember?" for "+filterMember:"");
 }
+// Builds one task card: icon, title, description, assignee, due date, Copy context button and drag/click handlers.
 function card(t){
-  const c=el("article","card");c.style.setProperty("--cb",COLORS[urgency(t)]);
+  const c=el("article","card");{const bg=COLORS[urgency(t)];c.style.setProperty("--cb",bg);c.style.setProperty("--ct",textFor(bg));}
   c.draggable=true;c.tabIndex=0;c.setAttribute("aria-label","Edit task: "+t.title);
   const top=el("div","top");top.append(el("span","type",t.type==="bug"?"Bug":"Feature"));
   const meta=el("div","meta");
@@ -280,12 +446,16 @@ function card(t){
   return c;
 }
 
+// TASK WINDOW: form setup, filling the assignee dropdown, opening it and saving it.
 const f=$("f"),dlg=$("dlg");
+// Fill the Status dropdown with the column names.
 COLS.forEach(([k,n])=>{const o=document.createElement("option");o.value=k;o.textContent=n;f.status.append(o)});
+// TEAM MEMBERS: stored in local storage and used by the assignee dropdown, filter and Members page.
 const MKEY="kanban-members-v1";
 function loadMembers(){try{const s=JSON.parse(localStorage.getItem(MKEY));if(Array.isArray(s))return s}catch(e){}return ["Maya Patel","Tom Reyes","Priya Nair","Sam Okafor"]}
 function saveMembers(){try{localStorage.setItem(MKEY,JSON.stringify(members))}catch(e){}}
 let members=loadMembers();
+// Shows when the context text was last updated.
 function setCts(ts){
   $("cts").textContent=ts?"Last updated "+new Date(ts).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"}):"Context not updated yet";
 }
@@ -295,6 +465,7 @@ function fillAssignees(cur){
   [["","Unassigned"],...names.map(n=>[n,n])].forEach(([v,l])=>{const o=document.createElement("option");o.value=v;o.textContent=l;f.assignee.append(o)});
   f.assignee.value=cur||"";
 }
+// Opens the task window, empty for a new task or filled in for an existing one.
 function openDlg(t){
   editing=t||null;
   $("dt").textContent=t?"Edit task":"New task";
@@ -306,6 +477,7 @@ function openDlg(t){
   $("del").style.display=t?"":"none";
   dlg.showModal();f.title.focus();
 }
+// Save the task; the context timestamp only changes when the context text changed.
 f.addEventListener("submit",e=>{
   e.preventDefault();
   const v={title:f.title.value.trim(),description:f.description.value.trim(),type:f.type.value,status:f.status.value,assignee:f.assignee.value.trim(),due:f.due.value};
@@ -317,6 +489,7 @@ f.addEventListener("submit",e=>{
   else state.tasks.push({id:mk(state.next++),created:iso(new Date()),...v});
   save();render();dlg.close();
 });
+// MEMBERS PAGE: draws the member list with task counts and Remove buttons.
 function renderMembers(){
   const ul=$("mlist");ul.textContent="";
   $("msum").textContent=members.length+(members.length===1?" member":" members");
@@ -328,14 +501,22 @@ function renderMembers(){
     const li=el("li");li.append(el("span","av",initials(n)),info,rm);ul.append(li);
   });
 }
+// NAVIGATION: shows one page (Home, Kanban, Settings or Members) and marks the active navbar button.
 function show(v){
-  $("viewK").hidden=v!=="k";$("viewM").hidden=v!=="m";
+  $("viewS").hidden=v!=="s";$("viewH").hidden=v!=="h";$("viewK").hidden=v!=="k";$("viewM").hidden=v!=="m";
   $("navK").setAttribute("aria-current",v==="k"?"page":"false");
+  $("navH").setAttribute("aria-current",v==="h"?"page":"false");
+  $("navS").setAttribute("aria-current",v==="s"?"page":"false");
   $("navM").setAttribute("aria-current",v==="m"?"page":"false");
   if(v==="m")renderMembers();else render();
 }
+// Navbar buttons and the logo switch pages.
+$("navH").onclick=()=>show("h");
+$("navS").onclick=()=>show("s");
+$("logo").onclick=()=>show("h");
 $("navK").onclick=()=>show("k");
 $("navM").onclick=()=>show("m");
+// ADD MEMBER window: validates the name, blocks duplicates and saves.
 const mf=$("mf"),mdlg=$("mdlg");
 $("addM").onclick=()=>{mf.mname.value="";$("merr").textContent="";mdlg.showModal();mf.mname.focus()};
 $("mcancel").onclick=()=>mdlg.close();
@@ -346,8 +527,11 @@ mf.addEventListener("submit",e=>{
   if(members.some(m=>m.toLowerCase()===n.toLowerCase())){$("merr").textContent="That member is already on the team.";return}
   members.push(n);saveMembers();renderMembers();mdlg.close();
 });
+// Redraws the board every 5 minutes so card colours keep up with the clock.
 setInterval(()=>{if(!dlg.open&&!$("viewK").hidden&&!document.querySelector(".dragging"))render()},300000);
+// Copy context button in the task window copies what is currently typed in the form.
 $("copyCtx").onclick=async()=>{const b=$("copyCtx");flash(b,await copyText(buildCopy(f.title.value.trim(),f.description.value.trim(),f.context.value.trim())))};
+// LINK CARDS: load saved URLs and save them as you type.
 const LKEY="kanban-links-v1";
 let links={};
 try{links=JSON.parse(localStorage.getItem(LKEY))||{}}catch(e){}
@@ -355,6 +539,7 @@ document.querySelectorAll("[data-link]").forEach(i=>{
   i.value=links[i.dataset.link]||"";
   i.addEventListener("input",()=>{links[i.dataset.link]=i.value.trim();try{localStorage.setItem(LKEY,JSON.stringify(links))}catch(e){}});
 });
+// REMOVE MEMBER: asks for confirmation, then unassigns that member's tasks and removes them.
 let removing=null;
 function askRemove(n){
   removing=n;
@@ -371,9 +556,33 @@ $("ryes").onclick=()=>{
   }
   removing=null;$("rdlg").close();
 };
+// SETTINGS: font stacks, allowed values and saved choices (defaults: light, IBM Plex Sans, 16px).
+const FONTS={plex:'"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif',atkinson:'"Atkinson Hyperlegible",system-ui,sans-serif',system:'system-ui,-apple-system,"Segoe UI",sans-serif',serif:'Georgia,"Times New Roman",serif',verdana:'Verdana,Geneva,sans-serif',mono:'ui-monospace,"Courier New",monospace'};
+const SKEY="kanban-settings-v1",THEMES=["light","dark","hc"],SIZES=["16","18","20","22"];
+let settings={theme:"light",font:"plex",size:"16"};
+try{const x=JSON.parse(localStorage.getItem(SKEY));if(x){if(THEMES.includes(x.theme))settings.theme=x.theme;if(Object.prototype.hasOwnProperty.call(FONTS,x.font))settings.font=x.font;if(SIZES.includes(String(x.size)))settings.size=String(x.size)}}catch(e){}
+function saveSettings(){try{localStorage.setItem(SKEY,JSON.stringify(settings))}catch(e){}}
+// Applies the theme, font and size to the page and syncs the Settings controls.
+function applySettings(){
+  const r=document.documentElement;
+  r.dataset.theme=settings.theme;
+  r.style.setProperty("--font",FONTS[settings.font]);
+  r.style.setProperty("--fs",settings.size+"px");
+  document.querySelectorAll('input[name="theme"]').forEach(i=>{i.checked=i.value===settings.theme});
+  $("setFont").value=settings.font;$("setSize").value=settings.size;
+}
+document.querySelectorAll('input[name="theme"]').forEach(i=>i.addEventListener("change",()=>{if(i.checked){settings.theme=i.value;saveSettings();applySettings()}}));
+$("setFont").addEventListener("change",e=>{settings.font=e.target.value;saveSettings();applySettings()});
+$("setSize").addEventListener("change",e=>{settings.size=e.target.value;saveSettings();applySettings()});
+// Apply saved settings on load.
+applySettings();
+// Changing the filter redraws the board.
+$("filter").addEventListener("change",e=>{filterMember=e.target.value;render()});
+// New task button opens an empty task window.
 $("add").onclick=()=>openDlg(null);
 $("cancel").onclick=()=>dlg.close();
 $("del").onclick=()=>{if(editing&&confirm("Delete this task? This can’t be undone.")){state.tasks=state.tasks.filter(t=>t!==editing);save();render();dlg.close()}};
+// First draw of the board.
 render();
 </script>
 </body>
